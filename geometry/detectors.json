@@ -1,0 +1,26 @@
+{
+  "uboone": {
+    "width": 2.56,
+    "height": 2.33,
+    "length": 10.37,
+    "xd": 0,
+    "yd": 0,
+    "zd": 470
+  },
+  "sbnd": {
+    "width": 4.00,
+    "height": 4.00,
+    "length": 5.00,
+    "xd": 0,
+    "yd": 0,
+    "zd": 110
+  },
+  "icarus": {
+    "width": 6.00,
+    "height": 3.16,
+    "length": 17.95,
+    "xd": 0,
+    "yd": 0,
+    "zd": 600
+  }
+}
