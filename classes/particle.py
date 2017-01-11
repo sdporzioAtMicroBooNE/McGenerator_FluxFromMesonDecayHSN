@@ -11,36 +11,6 @@ def DecayFunction(decayConstant,t):
     'Exponential decay function'
     return np.exp(-decayConstant*t)
 
-def Generate2BodyDecayProducts(parentMeson,pdg1,pdg2):
-    'Generate particles from parent meson decay'
-    # Generate random direction in space for decay particle trajectories (isotropic back-to-back)'
-    theta1 = np.random.rand()*np.pi
-    phi1 = np.random.rand()*np.pi*2.
-    theta2 = theta1 + np.pi
-    phi2 = phi1
-    # Determine masses from pdg code
-    mass1 = const['mass'][pdgKey[pdg1]]
-    mass2 = const['mass'][pdgKey[pdg2]]
-    # Determine kinematically energies and momenta for the decay particles
-    e1 = (pow(parentMeson.GetMass(),2) + pow(mass1,2) - pow(mass2,2))/float(2.*parentMeson.GetMass())
-    e2 = (pow(parentMeson.GetMass(),2) + pow(mass2,2) - pow(mass1,2))/float(2.*parentMeson.GetMass())
-    p1 = Momentum(e1,mass1)
-    p2 = Momentum(e2,mass2)
-    # Assign cartesian components of momentum
-    px1 = p1*np.sin(theta1)*np.cos(phi1)
-    py1 = p1*np.sin(theta1)*np.sin(phi1)
-    pz1 = p1*np.cos(theta1)
-    px2 = p2*np.sin(theta2)*np.cos(phi2)
-    py2 = p2*np.sin(theta2)*np.sin(phi2)
-    pz2 = p2*np.cos(theta2)
-    # Register decay particles (in rest frame of parent)
-    part1 = Particle(pdg1,parentMeson.GetEndPoint().x,parentMeson.GetEndPoint().y,parentMeson.GetEndPoint().z,px1,py1,pz1)
-    part2 = Particle(pdg2,parentMeson.GetEndPoint().x,parentMeson.GetEndPoint().y,parentMeson.GetEndPoint().z,px2,py2,pz2)
-    # Boost decay particles to lab frame
-    part1.GetStartPoint().GetFourM().LorentzBoost(parentMeson.GetStartPoint().GetFourM())
-    part2.GetStartPoint().GetFourM().LorentzBoost(parentMeson.GetStartPoint().GetFourM())
-    return part1, part2
-
 class Point:
     'Particle-point corresponding to a specific moment of the particle lifetime'
     def __init__(self,m,x,y,z,px,py,pz,t):
@@ -84,7 +54,7 @@ class Particle:
             raise Exception('Particle has not been decayed yet!')
     def GetDecayStatus(self):
         return self.decayStatus
-    def DecayParticle(self):
+    def GenerateEndPoint(self):
         'Simulate a random decay and generates end-point for particle'
         meanLife = const['mean_life'][pdgKey[self.pdg]]
         decayConst = 1/float(meanLife)
@@ -98,3 +68,35 @@ class Particle:
         endY = self.startPoint.y + self.startPoint.fourm.py*c*t/float(self.m)
         endZ = self.startPoint.z + self.startPoint.fourm.pz*c*t/float(self.m)
         self.endPoint = Point(self.m,endX,endY,endZ,self.startPoint.fourm.px,self.startPoint.fourm.py,self.startPoint.fourm.pz,t)
+    def DecayParticle(self,pdg1,pdg2):
+        'Generate particles from parent meson decay'
+        # Check if end-point has been generated already and generate if not
+        if self.decayStatus == False:
+            self.GenerateEndPoint()
+        # Generate random direction in space for decay particle trajectories (isotropic back-to-back)'
+        theta1 = np.random.rand()*np.pi
+        phi1 = np.random.rand()*np.pi*2.
+        theta2 = theta1 + np.pi
+        phi2 = phi1
+        # Determine masses from pdg code
+        mass1 = const['mass'][pdgKey[pdg1]]
+        mass2 = const['mass'][pdgKey[pdg2]]
+        # Determine kinematically energies and momenta for the decay particles
+        e1 = (pow(self.m,2) + pow(mass1,2) - pow(mass2,2))/float(2.*self.m)
+        e2 = (pow(self.m,2) + pow(mass2,2) - pow(mass1,2))/float(2.*self.m)
+        p1 = Momentum(e1,mass1)
+        p2 = Momentum(e2,mass2)
+        # Assign cartesian components of momentum
+        px1 = p1*np.sin(theta1)*np.cos(phi1)
+        py1 = p1*np.sin(theta1)*np.sin(phi1)
+        pz1 = p1*np.cos(theta1)
+        px2 = p2*np.sin(theta2)*np.cos(phi2)
+        py2 = p2*np.sin(theta2)*np.sin(phi2)
+        pz2 = p2*np.cos(theta2)
+        # Register decay particles (in rest frame of parent)
+        part1 = Particle(pdg1,self.endPoint.x,self.endPoint.y,self.endPoint.z,px1,py1,pz1)
+        part2 = Particle(pdg2,self.endPoint.x,self.endPoint.y,self.endPoint.z,px2,py2,pz2)
+        # Boost decay particles to lab frame
+        part1.GetStartPoint().GetFourM().LorentzBoost(self.startPoint.fourm)
+        part2.GetStartPoint().GetFourM().LorentzBoost(self.startPoint.fourm)
+        return part1, part2
